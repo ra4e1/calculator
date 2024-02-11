@@ -18,8 +18,8 @@ func main() { // запуск всего
 	}
 
 	config := application.Config{
-		Port:      port,      // Прот http-сервера
-		CalcDelay: calcDelay, // задержка подсчета в секундах
+		Port:      port,      // Порт http-сервера
+		CalcDelay: calcDelay, // Задержка подсчета в секундах
 	}
 	app := application.NewApplication(config)
 	app.Run()
