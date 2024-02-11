@@ -1,10 +1,11 @@
 package webserver
 
 import (
-	"calculator/service"
 	"fmt"
 	"net/http"
 	"sync"
+
+	"github.com/ra4e1/calculator/internal/service"
 )
 
 type Webserver struct {

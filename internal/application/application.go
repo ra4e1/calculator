@@ -1,8 +1,8 @@
 package application
 
 import (
-	"calculator/service"
-	"calculator/webserver"
+	"github.com/ra4e1/calculator/internal/service"
+	"github.com/ra4e1/calculator/internal/webserver"
 )
 
 type Config struct {

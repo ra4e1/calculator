@@ -1,9 +1,10 @@
 package webserver
 
 import (
-	"calculator/service"
 	"fmt"
 	"net/http"
+
+	"github.com/ra4e1/calculator/internal/service"
 )
 
 func (web *Webserver) CalcHandler(w http.ResponseWriter, r *http.Request) { //запуск счета и выдача ID
