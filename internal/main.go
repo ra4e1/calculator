@@ -18,8 +18,9 @@ func main() { // запуск всего
 	}
 
 	config := application.Config{
-		Port:      port,      // Порт http-сервера
-		CalcDelay: calcDelay, // Задержка подсчета в секундах
+		Port:      port,       // Порт http-сервера
+		CalcDelay: calcDelay,  // Задержка подсчета в секундах
+		DbName:    "store.db", // имя файла базы данных
 	}
 	app := application.NewApplication(config)
 	app.Run()

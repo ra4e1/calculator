@@ -1,6 +1,7 @@
 package webserver
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
@@ -9,43 +10,48 @@ import (
 )
 
 type Webserver struct {
-	requestID    int
-	answers      map[int]*service.Answer
-	mu           sync.Mutex
 	calcService  *service.CalculatorService
-	stateService *service.StateService
+	stateService *service.DbStateService
+	userService  *service.UserService
 }
 
-func NewWebserver() *Webserver { //создание
+func NewWebserver(db *service.DbService) *Webserver { //создание
 	return &Webserver{
-		requestID:    0,
-		answers:      make(map[int]*service.Answer),
-		mu:           sync.Mutex{},
-		stateService: service.NewStateService(),
+		stateService: service.NewDbStateService(db),
+		userService:  service.NewUserService(db),
 	}
 }
 
 func (w *Webserver) loadState() {
-	answers, requestID, err := w.stateService.RestoreState()
-	if err == nil {
-		w.answers = answers
-		w.requestID = requestID
-	} else {
-		fmt.Println(err)
-	}
+}
+
+func (web *Webserver) ErrorResponse(w http.ResponseWriter, message string, httpStatusCode int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(httpStatusCode)
+	resp := make(map[string]string)
+	resp["message"] = message
+	jsonResp, _ := json.Marshal(resp)
+	w.Write(jsonResp)
 }
 
 func (w *Webserver) createRoutes() *http.ServeMux {
 	mux := http.NewServeMux()
 
 	calc := http.HandlerFunc(w.CalcHandler)
-	mux.Handle("/calc", calc)
+	mux.Handle("/calc", w.authMiddleware(calc))
 
 	answer := http.HandlerFunc(w.AnswerHandler)
-	mux.Handle("/answer", answer)
+	mux.Handle("/answer", w.authMiddleware(answer))
 
 	list := http.HandlerFunc(w.ListHandler)
-	mux.Handle("/list", list)
+	mux.Handle("/list", w.authMiddleware(list))
+
+	userRegister := http.HandlerFunc(w.UserRegisterHandler)
+	mux.Handle("/api/v1/register", userRegister)
+
+	userLogin := http.HandlerFunc(w.UserLoginHandler)
+	mux.Handle("/api/v1/login", userLogin)
+
 	return mux
 }
 

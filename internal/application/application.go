@@ -8,22 +8,34 @@ import (
 type Config struct {
 	Port      int
 	CalcDelay int
+	DbName    string
 }
 
 type Application struct {
 	Cfg Config
+	Db  *service.DbService
 	Web *webserver.Webserver
 }
 
 func NewApplication(config Config) *Application { //создание
+	db := service.NewDbService(config.DbName)
+	web := webserver.NewWebserver(db)
+
 	return &Application{
 		Cfg: config,
-		Web: webserver.NewWebserver(),
+		Db:  db,
+		Web: web,
 	}
 }
 
-func (a *Application) Run() int { //запуск
-	calc := service.NewCalculatorService(a.Cfg.CalcDelay)
-	a.Web.Start(a.Cfg.Port, calc)
+func (app *Application) Run() int { //запуск
+	calc := service.NewCalculatorService(app.Cfg.CalcDelay)
+	err := app.Db.Open()
+	if err != nil {
+		panic(err)
+	}
+	defer app.Db.Close()
+
+	app.Web.Start(app.Cfg.Port, calc)
 	return 0
 }

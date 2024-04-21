@@ -8,26 +8,34 @@ import (
 )
 
 func (web *Webserver) CalcHandler(w http.ResponseWriter, r *http.Request) { //запуск счета и выдача ID
-	web.mu.Lock()
-	web.requestID++
-	requestID := web.requestID
-	answer := &service.Answer{Ready: false, Err: nil, Value: nil, Expresion: r.FormValue("q")}
-	web.answers[requestID] = answer
-	web.stateService.SaveState(web.answers)
-	web.mu.Unlock()
+	userId := r.Context().Value("userid").(int64)
 
-	go func() {
-		defer web.stateService.SaveState(web.answers)
-		result, err := web.calcService.Calculate(answer.Expresion)
+	expression := &service.Expression{
+		UserId:     userId,
+		Ready:      false,
+		Err:        nil,
+		Value:      nil,
+		Expression: r.FormValue("q"),
+	}
+
+	requestID, err := web.stateService.AddExpression(expression)
+	if err != nil {
+		web.ErrorResponse(w, "Ошибка. Не получилось сохранить в базе :(", http.StatusInternalServerError)
+		return
+	}
+
+	go func(requestID int64) {
+		result, err := web.calcService.Calculate(expression.Expression)
 		if err != nil {
-			answer.Ready = true
-			answer.Err = &service.AnswerError{Msg: err.Error()}
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			expression.Ready = true
+			expression.Err = &service.ExpressionError{Msg: err.Error()}
+			web.stateService.UpdateExpression(requestID, expression)
 			return
 		}
-		answer.Ready = true
-		answer.Value = result
-	}()
+		expression.Ready = true
+		expression.Value = result
+		web.stateService.UpdateExpression(requestID, expression)
+	}(requestID)
 
 	fmt.Fprint(w, requestID)
 }
